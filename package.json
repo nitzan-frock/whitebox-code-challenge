@@ -1,0 +1,26 @@
+{
+  "name": "whitebox-code-challenge",
+  "version": "1.0.0",
+  "description": "Blank HTML store template for code challenge",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon ./server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitzanf/whitebox-code-challenge.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nitzanf/whitebox-code-challenge/issues"
+  },
+  "homepage": "https://github.com/nitzanf/whitebox-code-challenge#readme",
+  "dependencies": {
+    "express": "^4.16.4"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10"
+  }
+}
