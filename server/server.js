@@ -4,7 +4,7 @@ const PORT = 8080;
 
 const url = `https://next.json-generator.com/api/json/get/EkzBIUWNL`;
 
-const routes = require('./app/routes')(app, url);
+const routes = require('./api/routes')(app, url);
 
 app.listen(PORT, () => {
     console.log(`Listening on ${PORT}.`);
