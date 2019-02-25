@@ -10,9 +10,10 @@ $('document').ready(function () {
     let currentProducts = getDefaultProducts();
 
     const showSelectedProducts = (products) => {
+        console.log(products);
         defaultProducts.each(function () {
             //console.log(products);
-            if (products.has(this)) {
+            if (products.has(this) >= 1) {
                 //console.log(this);
                 $(this).show();
             } else {
@@ -102,7 +103,8 @@ $('document').ready(function () {
 
     // filter handlers
     const filterProducts = (min, max, products) => {
-        let filtered = [];
+        let filtered = {};
+        let index = 0;
         products.each(function () {
             let USD = $(this).find('.block2-price').text().trim();
             
@@ -113,9 +115,10 @@ $('document').ready(function () {
             let value = price(USD);
             
             if (value >= min && value <= max) {
-                filtered.push(this);
+                filtered.index = this;
+                index++;
             }
         });
-        console.log(filtered);
+        showSelectedProducts(filtered);
     }
 });
