@@ -7,14 +7,11 @@ $('document').ready(function () {
     };
 
     let defaultProducts = getDefaultProducts();
-    let currentProducts = getDefaultProducts();
+    let sortedProducts = getDefaultProducts();
 
     const showSelectedProducts = (products) => {
-        console.log(products);
         defaultProducts.each(function () {
-            //console.log(products);
-            if (products.has(this) >= 1) {
-                //console.log(this);
+            if ($.inArray(this, products) !== -1) {
                 $(this).show();
             } else {
                 $(this).hide();
@@ -32,25 +29,28 @@ $('document').ready(function () {
                 showSelectedProducts(defaultProducts);
                 break;
             case 'Price: low to high':
-                sortProducts('lo-hi', defaultProducts);
+                sortProducts('lo-hi');
                 break;
             case 'Price: high to low':
-                sortProducts('hi-lo', defaultProducts);
+                sortProducts('hi-lo');
+                break;
+            case 'Price':
+                showSelectedProducts(defaultProducts);
                 break;
             case '$0.00 - $50.00':
-                filterProducts(0.00, 50.00, defaultProducts);
+                filterProducts(0.00, 50.00);
                 break;
             case '$50.00 - $100.00':
-                filterProducts(50.00, 100.00, defaultProducts);
+                filterProducts(50.00, 100.00);
                 break;
             case '$100.00 - $150.00':
-                filterProducts(100.00, 150.00, defaultProducts);
+                filterProducts(100.00, 150.00);
                 break;
             case '$150.00 - $200.00':
-                filterProducts(150.00, 200.00, defaultProducts);
+                filterProducts(150.00, 200.00);
                 break;
             case '$200.00+':
-                filterProducts(200.00, Number.MAX_SAFE_INTEGER, defaultProducts);
+                filterProducts(200.00, Number.MAX_SAFE_INTEGER);
                 break;
             default:
                 alert(`Error: ${this.value} is not a valid sort`);
@@ -58,23 +58,23 @@ $('document').ready(function () {
     });
 
     // Sort by price Low - High, or High - Low.
-    const sortProducts = (method, products) => {
-        let list = products.sort(function(a, b) {
+    const sortProducts = (method) => {
+        let list = sortedProducts.sort(function(a, b) {
             // parse the price from the element
-            let aStr = $(a).find('.block2-price').text().trim();
-            let bStr = $(b).find('.block2-price').text().trim();
+            let aUSD = $(a).find('.block2-price').text().trim();
+            let bUSD = $(b).find('.block2-price').text().trim();
             
             // check to make sure there is not a sale price
-            if (aStr === '') {
-                aStr = $(a).find('.block2-newprice').text().trim();
+            if (aUSD === '') {
+                aUSD = $(a).find('.block2-newprice').text().trim();
             }
-            if (bStr === '') {
-                bStr = $(b).find('.block2-newprice').text().trim();
+            if (bUSD === '') {
+                bUSD = $(b).find('.block2-newprice').text().trim();
             }
 
             // regex matches the number value and drops the "$"
-            let aVal = price(aStr);
-            let bVal = price(bStr);
+            let aVal = price(aUSD);
+            let bVal = price(bUSD);
 
             // makes the comparison based on the method input.
             if (method === 'lo-hi') {
@@ -102,10 +102,44 @@ $('document').ready(function () {
 
 
     // filter handlers
-    const filterProducts = (min, max, products) => {
-        let filtered = {};
-        let index = 0;
-        products.each(function () {
+    // when lower value of slider changes
+    let config = {
+        attributes: true, 
+        childList: true, 
+        subtree: true
+    };
+
+    const observerCallback = function(mutationsList, observer) {
+        for (let mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                let mutated = mutation.target.innerText;
+
+                if (mutation.target.id === 'value-lower') {
+                    let hi = $('#value-upper').text().trim();
+                    filterProducts(mutated, hi);
+                } else if (mutation.target.id === 'value-upper') {
+                    let lo = $('#value-lower').text().trim();
+                    filterProducts(lo, mutated);
+                }
+                
+                
+            }
+        }
+    };
+
+    const lowerValue = document.getElementById('value-lower');
+    const upperValue = document.getElementById('value-upper');
+    console.log(lowerValue);
+
+    const observer = new MutationObserver(observerCallback);
+    observer.observe(lowerValue, config);
+    observer.observe(upperValue, config);
+
+    // filter by price
+    const filterProducts = (min, max) => {
+        let filtered = [];
+
+        defaultProducts.each(function () {
             let USD = $(this).find('.block2-price').text().trim();
             
             if (USD === '') {
@@ -115,10 +149,10 @@ $('document').ready(function () {
             let value = price(USD);
             
             if (value >= min && value <= max) {
-                filtered.index = this;
-                index++;
+                filtered.push(this);
             }
         });
-        showSelectedProducts(filtered);
+
+        showSelectedProducts($(filtered));
     }
 });
