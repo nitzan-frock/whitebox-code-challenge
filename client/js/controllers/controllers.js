@@ -84,7 +84,44 @@ $('document').ready(function () {
 
         return container;
     }
+
+    // API
     
+    const API = (function () {
+        const host = 'localhost:8080';
+
+        const getMany = async () => {
+            let data;
+            let url = `${host}/getMany`;
+            try {
+                let res = await fetch(url);
+                data = await res.json();
+            } catch (err) {
+                alert(err);
+            }
+            return data;
+        }
+
+        const getSingle = async (id) => {
+            let data;
+            let url = `${host}/getSingle/${id}`;
+            try {
+                let res = await fetch(url);
+                data = await res.json();
+            } catch (err) {
+                alert(err);
+            }
+            return data;
+        }
+
+        return {
+            getMany: getMany,
+            getSingle: getSingle
+        }
+    })();
+
+    console.log();
+
     // Current Products' block with parent div element 
     const getDefaultProducts = () => {
         return $('.block2').closest('.p-b-50');
