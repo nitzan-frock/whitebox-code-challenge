@@ -1,6 +1,90 @@
 'use strict';
 
 $('document').ready(function () {
+
+    /**
+     * Build new product element for the DOM using the HTML template's 
+     * classes.
+     * 
+     * Overall Structure of the element: 
+     * <productContainer>
+     *     <block2>
+     *         <imgAndOverlay>
+     *             <img>
+     *             <overlayContainer>
+     *                 <a>
+     *                     <heartIcons></heartIcons>
+     *                 </a>
+     *             </overlayContainer>
+     *         </imgAndOverlay>
+     *         <namePrice>
+     *             <nameDetail></nameDetail>
+     *             <price></price>
+     *         </namePrice>
+     *     </block2>
+     * </productContainer>
+     * 
+     */
+    const buildProductDiv = (data) => {
+        console.log();
+        // Build overall product container
+        const container = $('<div></div>')
+            .addClass('col-sm-12 col-md-6 col-lg-4 p-b-50')
+            .attr('id', data._id);
+        const block2 = $('<div></div>')
+            .addClass('block2');
+
+        // Build image and overlay container
+        const imgOverlay_container = $('<div></div>')
+            .addClass('block2-img wrap-pic-w of-hidden pos-relative');
+        const img = $('<img>')
+            .attr('src', 'images/item-01.jpg')
+            .attr('alt', 'IMG-PRODUCT');
+
+        // Build overlay container
+        const overlay_container = $('<div></div>')
+            .addClass('block2-overlay trans-0-4');
+        const wishlistAnchor = $('<a></a>')
+            .addClass('block2-btn-addwishlist hov-pointer trans-0-4')
+            .attr('href', "#");
+        const iconHeartAlt = $('<i></i>')   
+            .addClass('icon-wishlist icon_heart_alt')
+            .attr('aria-hidden', 'true');
+        const iconHeartNone = $('<i></i>')   
+            .addClass('icon-wishlist icon_heart dis-none')
+            .attr('aria-hidden', 'true');
+        
+        wishlistAnchor.append(iconHeartAlt).append(iconHeartNone);
+
+        // Build add to cart container
+        const addToCart_container = $('<div></div>')
+            .addClass('block2-btn-addcart w-size1 trans-0-4');
+        const addToCartBtn = $('<button></button>')
+            .addClass('flex-c-m size1 bg4 bo-rad-23 hov1 s-text1 trans-0-4')
+            .text('Add to Cart');
+
+        addToCart_container.append(addToCartBtn);
+        overlay_container.append(wishlistAnchor).append(addToCart_container);
+        imgOverlay_container.append(img).append(overlay_container);
+
+        // Build name and price container
+        const namePrice_container = $('<div></div>')
+            .addClass('block2-txt p-t-20');
+        const nameDetail = $('<a></a>')
+            .addClass('block2-name dis-block s-text3 p-b-5')
+            .attr('href', 'product-detail.html')
+            .text(data.name);
+        const priceSpan = $('<span></span>')
+            .addClass('block2-price m-text6 p-r-5')
+            .text('$'+data.price);
+
+        namePrice_container.append(nameDetail).append(priceSpan);
+        block2.append(imgOverlay_container).append(namePrice_container);
+        container.append(block2);
+
+        return container;
+    }
+    
     // Current Products' block with parent div element 
     const getDefaultProducts = () => {
         return $('.block2').closest('.p-b-50');
@@ -18,6 +102,13 @@ $('document').ready(function () {
             }
         });
     }
+
+    $('.block2').closest('.row').append(buildProductDiv({
+        _id: 'test',
+        name: 'dummyProduct',
+        price: '40.00',
+        image: ''
+    }));
 
     // sorting and filter selection handlers
     $('select').change(function() {
@@ -121,8 +212,6 @@ $('document').ready(function () {
                     let lo = $('#value-lower').text().trim();
                     filterProducts(lo, mutated);
                 }
-                
-                
             }
         }
     };
