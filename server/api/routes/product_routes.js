@@ -3,6 +3,7 @@ const https = require('../utility/https');
 module.exports = function (app, url) {
     app.get('/getMany', (req, res) => {
         const send = data => {
+            res.append('Access-Control-Allow-Origin', ['*']);
             res.send(data);
         };
 

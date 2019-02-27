@@ -5,7 +5,7 @@ const https = require('https');
 *   https requests. Can be expanded for additional HTTP requests.
 */
 
-module.exports = (function (url, send) {
+module.exports = (function () {
     return {
         get: (url, send) => {
             let data = '';

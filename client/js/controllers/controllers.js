@@ -1,6 +1,42 @@
 'use strict';
 
-$('document').ready(function () {
+$('document').ready(main());
+
+/**
+ * 
+ *  API returns an object with methods to call the different APIs.
+ * 
+ */
+    
+function API () {
+    const host = 'http://localhost:8080';
+
+    const getMany = async () => {
+        let url = `${host}/getMany`;
+        return await tryFetch(url);
+    }
+
+    const getSingle = async (id) => {
+        let url = `${host}/getSingle/${id}`;
+        return await tryFetch(url);
+    }
+
+    const tryFetch = async (url) => {
+        try {
+            let res = await fetch(url);
+            return await res.json();
+        } catch (err) {
+            alert(err);
+        }
+    }
+
+    return {
+        getMany: getMany,
+        getSingle: getSingle
+    }
+}
+
+async function main () {
 
     /**
      * Build new product element for the DOM using the HTML template's 
@@ -26,7 +62,6 @@ $('document').ready(function () {
      * 
      */
     const buildProductDiv = (data) => {
-        console.log();
         // Build overall product container
         const container = $('<div></div>')
             .addClass('col-sm-12 col-md-6 col-lg-4 p-b-50')
@@ -38,7 +73,7 @@ $('document').ready(function () {
         const imgOverlay_container = $('<div></div>')
             .addClass('block2-img wrap-pic-w of-hidden pos-relative');
         const img = $('<img>')
-            .attr('src', 'images/item-01.jpg')
+            .attr('src', data.image)
             .attr('alt', 'IMG-PRODUCT');
 
         // Build overlay container
@@ -82,56 +117,34 @@ $('document').ready(function () {
         block2.append(imgOverlay_container).append(namePrice_container);
         container.append(block2);
 
-        return container;
+        return container[0];
     }
 
-    // API
-    
-    const API = (function () {
-        const host = 'localhost:8080';
+    // add id to the div where the products are located on the DOM
+    $('.block2').closest('.row').attr('id', 'products-container');
+    // remove any templates
+    $('#products-container').empty();
 
-        const getMany = async () => {
-            let data;
-            let url = `${host}/getMany`;
-            try {
-                let res = await fetch(url);
-                data = await res.json();
-            } catch (err) {
-                alert(err);
-            }
-            return data;
-        }
+    const api = API();
 
-        const getSingle = async (id) => {
-            let data;
-            let url = `${host}/getSingle/${id}`;
-            try {
-                let res = await fetch(url);
-                data = await res.json();
-            } catch (err) {
-                alert(err);
-            }
-            return data;
-        }
+    let defaultProductsData = await api.getMany();
 
-        return {
-            getMany: getMany,
-            getSingle: getSingle
-        }
-    })();
+    let defaultProducts = defaultProductsData.map(product => {
+        return buildProductDiv(product);
+    });
 
-    console.log();
+    // Insert default products into the DOM.
+    const showDefault = () => {
+        $('#products-container').html(defaultProducts);
+    }
 
-    // Current Products' block with parent div element 
-    const getDefaultProducts = () => {
-        return $('.block2').closest('.p-b-50');
-    };
+    showDefault();
 
-    let defaultProducts = getDefaultProducts();
-    let sortedProducts = getDefaultProducts();
+    let currentProducts = $('.block2').closest('.p-b-50');
 
+    // Show the selected products in the DOM and hide the others.
     const showSelectedProducts = (products) => {
-        defaultProducts.each(function () {
+        $(defaultProducts).each(function () {
             if ($.inArray(this, products) !== -1) {
                 $(this).show();
             } else {
@@ -140,21 +153,14 @@ $('document').ready(function () {
         });
     }
 
-    $('.block2').closest('.row').append(buildProductDiv({
-        _id: 'test',
-        name: 'dummyProduct',
-        price: '40.00',
-        image: ''
-    }));
-
     // sorting and filter selection handlers
     $('select').change(function() {
         switch(this.value) {
             case 'Default Sorting':
-                showSelectedProducts(defaultProducts);
+                showDefault();
                 break;
             case 'Popularity':
-                showSelectedProducts(defaultProducts);
+                showDefault();
                 break;
             case 'Price: low to high':
                 sortProducts('lo-hi');
@@ -163,7 +169,7 @@ $('document').ready(function () {
                 sortProducts('hi-lo');
                 break;
             case 'Price':
-                showSelectedProducts(defaultProducts);
+                filterProducts(0.00, Number.MAX_SAFE_INTEGER);
                 break;
             case '$0.00 - $50.00':
                 filterProducts(0.00, 50.00);
@@ -187,7 +193,7 @@ $('document').ready(function () {
 
     // Sort by price Low - High, or High - Low.
     const sortProducts = (method) => {
-        let list = sortedProducts.sort(function(a, b) {
+        let list = currentProducts.sort(function(a, b) {
             // parse the price from the element
             let aUSD = $(a).find('.block2-price').text().trim();
             let bUSD = $(b).find('.block2-price').text().trim();
@@ -213,7 +219,7 @@ $('document').ready(function () {
         });
 
         // place the sorted list into it's proper location on the DOM.
-        $('.block2').closest('.row').html(list);
+        $('#products-container').html(list);
     }
 
     const compare = (a, b) => {
@@ -223,49 +229,27 @@ $('document').ready(function () {
     }
 
     const price = (currency) => {
-        const re = /[0-9]+.[0-9]{2}/ig;
+        const re = /[0-9]+.[0-9]{1,2}/ig;
         return parseFloat(currency.match(re)[0]);
     }
 
-
-
     // filter handlers
-    // when lower value of slider changes
-    let config = {
-        attributes: true, 
-        childList: true, 
-        subtree: true
-    };
-
-    const observerCallback = function(mutationsList, observer) {
-        for (let mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                let mutated = mutation.target.innerText;
-
-                if (mutation.target.id === 'value-lower') {
-                    let hi = $('#value-upper').text().trim();
-                    filterProducts(mutated, hi);
-                } else if (mutation.target.id === 'value-upper') {
-                    let lo = $('#value-lower').text().trim();
-                    filterProducts(lo, mutated);
-                }
-            }
+    // Set event handler for the filter price slider.
+    $('button').each(function () {
+        if ($(this).text().trim() === 'Filter') {
+            $(this).click(function () {
+                let lo = $('#value-lower').text().trim();
+                let hi = $('#value-upper').text().trim();
+                filterProducts(lo, hi);
+            });
         }
-    };
-
-    const lowerValue = document.getElementById('value-lower');
-    const upperValue = document.getElementById('value-upper');
-    console.log(lowerValue);
-
-    const observer = new MutationObserver(observerCallback);
-    observer.observe(lowerValue, config);
-    observer.observe(upperValue, config);
+    });
 
     // filter by price
     const filterProducts = (min, max) => {
         let filtered = [];
 
-        defaultProducts.each(function () {
+        currentProducts.each(function () {
             let USD = $(this).find('.block2-price').text().trim();
             
             if (USD === '') {
@@ -281,4 +265,26 @@ $('document').ready(function () {
 
         showSelectedProducts($(filtered));
     }
-});
+
+    // Search handlers
+    // basic search that does a regex test using the input to the names of the products.
+    $('[name="search-product"]').on('input', function () {
+        let input = $(this).val();
+        searchProducts(input);
+    });
+
+    $('button').find('.fa-search').click(function () {
+        let input = $('[name="search-product"]').val();
+        searchProducts(input);
+    });
+
+    const searchProducts = (input) => {
+        let filtered = [];
+        currentProducts.each(function () {
+            let name = $(this).find('.block2-name').text().trim();
+            let re = new RegExp(input);
+            if (re.test(name)) filtered.push(this);
+        });
+        showSelectedProducts($(filtered));
+    }
+}
