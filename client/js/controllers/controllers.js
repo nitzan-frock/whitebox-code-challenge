@@ -130,48 +130,60 @@ async function main () {
     let initialProductsData = await api.getMany();
 
     let initialProducts = initialProductsData.map(product => {
-        return buildProductDiv(product);
+        return {el: buildProductDiv(product), visible: true, filtered: true};
     });
+
+    // Show the selected products in the DOM and hide the others.
+    const showSelectedProducts = (products) => {
+        products.forEach(product => {
+            if (product.filtered && product.visible) {
+                $(product.el).show();
+            } else {
+                $(product.el).hide();
+            }
+        });
+    }
 
     // Insert default products into the DOM.
     const showInitial = () => {
-        $('#products-container').html(paginateProducts(initialProducts, 1));
+        let paginated = paginateProducts(initialProducts,1);
+        paginated.forEach(product => {
+            $('#products-container').append(product.el);
+        });
+        showSelectedProducts(paginated);
+        //$('#products-container').html(paginateProducts(initialProducts, 1));
     }
 
     const paginateProducts = (products, page) => {
         let numProductsPerPage = 12;
-        let productsShown = [];
+        let shownProducts = [...products];
 
-        if (products.length > numProductsPerPage) {
-            let startingIndex = (page - 1) * (products.length);
+        if (shownProducts.length > numProductsPerPage) {
+            let startingIndex = (page - 1) * (shownProducts.length);
             let endingIndex = (page * numProductsPerPage);
             console.log(startingIndex, endingIndex);
 
-            if (endingIndex > products.length) {
-                for (let i = startingIndex; i < products.length; i++){
-                    productsShown.push(products[i]);
-                }
-            } else {
-                for (let i = startingIndex; i < endingIndex; i++){
-                    productsShown.push(products[i]);
+            for (let i = startingIndex; i < shownProducts.length; i++){
+                if (i >= startingIndex && i < endingIndex) {
+                    shownProducts[i].visible = true;
+                } else {
+                    shownProducts[i].visible = false;
                 }
             }
-        } else {
-            productsShown.push(...products);
         }
 
-        updateNumResults(products.length);
-        return productsShown;
+        updateNumResults(shownProducts.length);
+        return shownProducts;
     }
 
     // Update how many results are showing of the total for the search or filter.
-    const updateNumResults = (numShown, total) => {
+    const updateNumResults = (numResults) => {
         let results = $('.s-text8.p-t-5.p-b-5');
-        if (numShown < 12) {
-            let text = `Showing 1–${numShown} of ${numShown} results`;
+        if (numResults < 12) {
+            let text = `Showing 1–${numResults} of ${numResults} results`;
             results.text(text);
         } else {
-            let text = `Showing 1–12 of ${numShown} results`;
+            let text = `Showing 1–12 of ${numResults} results`;
             results.text(text);
         }
     }
@@ -182,23 +194,14 @@ async function main () {
     let search = false;
     let sorted = [...initialProducts];
     let defaultSort = [...initialProducts];
-    let filtered = [...initialProducts];
+    ///let filtered = [...initialProducts];
     let currentProducts = [...initialProducts];
 
-    // Show the selected products in the DOM and hide the others.
-    const showSelectedProducts = (products) => {
-        $(currentProducts).each(function () {
-            if ($.inArray(this, products) !== -1) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    }
+    
 
     // sorting and filter selection handlers
     $('select').change(function() {
-        let products = sorted;
+        let products = currentProducts;
         switch(this.value) {
             case 'Default Sorting':
                 sortByDefault();
@@ -213,7 +216,6 @@ async function main () {
                 sortByPrice('hi-lo');
                 break;
             case 'Price':
-                console.log(currentProducts.length)
                 filterProducts(0.00, Number.MAX_SAFE_INTEGER, products);
                 break;
             case '$0.00 - $50.00':
@@ -266,6 +268,8 @@ async function main () {
                 return compare(bVal, aVal);
             }
         });
+
+        console.log(sorted.length);
 
         // place the sorted list into it's proper location on the DOM.
         $('#products-container').html(paginateProducts(sorted, 1));
