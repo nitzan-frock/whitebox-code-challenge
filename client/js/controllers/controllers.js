@@ -127,24 +127,67 @@ async function main () {
 
     const api = API();
 
-    let defaultProductsData = await api.getMany();
+    let initialProductsData = await api.getMany();
 
-    let defaultProducts = defaultProductsData.map(product => {
+    let initialProducts = initialProductsData.map(product => {
         return buildProductDiv(product);
     });
 
     // Insert default products into the DOM.
-    const showDefault = () => {
-        $('#products-container').html(defaultProducts);
+    const showInitial = () => {
+        $('#products-container').html(paginateProducts(initialProducts, 1));
     }
 
-    showDefault();
+    const paginateProducts = (products, page) => {
+        let numProductsPerPage = 12;
+        let productsShown = [];
 
-    let currentProducts = $('.block2').closest('.p-b-50');
+        if (products.length > numProductsPerPage) {
+            let startingIndex = (page - 1) * (products.length);
+            let endingIndex = (page * numProductsPerPage);
+            console.log(startingIndex, endingIndex);
+
+            if (endingIndex > products.length) {
+                for (let i = startingIndex; i < products.length; i++){
+                    productsShown.push(products[i]);
+                }
+            } else {
+                for (let i = startingIndex; i < endingIndex; i++){
+                    productsShown.push(products[i]);
+                }
+            }
+        } else {
+            productsShown.push(...products);
+        }
+
+        updateNumResults(products.length);
+        return productsShown;
+    }
+
+    // Update how many results are showing of the total for the search or filter.
+    const updateNumResults = (numShown, total) => {
+        let results = $('.s-text8.p-t-5.p-b-5');
+        if (numShown < 12) {
+            let text = `Showing 1–${numShown} of ${numShown} results`;
+            results.text(text);
+        } else {
+            let text = `Showing 1–12 of ${numShown} results`;
+            results.text(text);
+        }
+    }
+
+    showInitial();
+
+    // State of products
+    let search = false;
+    let sorted = [...initialProducts];
+    let defaultSort = [...initialProducts];
+    let filtered = [...initialProducts];
+    let currentProducts = [...initialProducts];
 
     // Show the selected products in the DOM and hide the others.
     const showSelectedProducts = (products) => {
-        $(defaultProducts).each(function () {
+        $(currentProducts).each(function () {
             if ($.inArray(this, products) !== -1) {
                 $(this).show();
             } else {
@@ -155,45 +198,51 @@ async function main () {
 
     // sorting and filter selection handlers
     $('select').change(function() {
+        let products = sorted;
         switch(this.value) {
             case 'Default Sorting':
-                showDefault();
+                sortByDefault();
                 break;
             case 'Popularity':
-                showDefault();
+                sortByDefault();
                 break;
             case 'Price: low to high':
-                sortProducts('lo-hi');
+                sortByPrice('lo-hi');
                 break;
             case 'Price: high to low':
-                sortProducts('hi-lo');
+                sortByPrice('hi-lo');
                 break;
             case 'Price':
-                filterProducts(0.00, Number.MAX_SAFE_INTEGER);
+                console.log(currentProducts.length)
+                filterProducts(0.00, Number.MAX_SAFE_INTEGER, products);
                 break;
             case '$0.00 - $50.00':
-                filterProducts(0.00, 50.00);
+                filterProducts(0.00, 50.00, products);
                 break;
             case '$50.00 - $100.00':
-                filterProducts(50.00, 100.00);
+                filterProducts(50.00, 100.00, products);
                 break;
             case '$100.00 - $150.00':
-                filterProducts(100.00, 150.00);
+                filterProducts(100.00, 150.00, products);
                 break;
             case '$150.00 - $200.00':
-                filterProducts(150.00, 200.00);
+                filterProducts(150.00, 200.00, products);
                 break;
             case '$200.00+':
-                filterProducts(200.00, Number.MAX_SAFE_INTEGER);
+                filterProducts(200.00, Number.MAX_SAFE_INTEGER, products);
                 break;
             default:
                 alert(`Error: ${this.value} is not a valid sort`);
         }
     });
 
+    const sortByDefault = () => {
+        $('#products-container').html(paginateProducts(defaultSort, 1));
+    }
+
     // Sort by price Low - High, or High - Low.
-    const sortProducts = (method) => {
-        let list = currentProducts.sort(function(a, b) {
+    const sortByPrice = (method) => {
+        sorted.sort(function(a, b) {
             // parse the price from the element
             let aUSD = $(a).find('.block2-price').text().trim();
             let bUSD = $(b).find('.block2-price').text().trim();
@@ -219,7 +268,7 @@ async function main () {
         });
 
         // place the sorted list into it's proper location on the DOM.
-        $('#products-container').html(list);
+        $('#products-container').html(paginateProducts(sorted, 1));
     }
 
     const compare = (a, b) => {
@@ -246,10 +295,10 @@ async function main () {
     });
 
     // filter by price
-    const filterProducts = (min, max) => {
+    const filterProducts = (min, max, products) => {
         let filtered = [];
 
-        currentProducts.each(function () {
+        $(products).each(function () {
             let USD = $(this).find('.block2-price').text().trim();
             
             if (USD === '') {
@@ -263,7 +312,8 @@ async function main () {
             }
         });
 
-        showSelectedProducts($(filtered));
+        showSelectedProducts(filtered);
+        $('#products-container').html(paginateProducts(filtered,1));
     }
 
     // Search handlers
@@ -274,17 +324,31 @@ async function main () {
     });
 
     $('button').find('.fa-search').click(function () {
+        console.log('FILTER CLICKED');
         let input = $('[name="search-product"]').val();
         searchProducts(input);
     });
 
     const searchProducts = (input) => {
+        if (input === '') {
+            showInitial();
+            return;
+        }
+
         let filtered = [];
-        currentProducts.each(function () {
+        $(initialProducts).each(function () {
             let name = $(this).find('.block2-name').text().trim();
             let re = new RegExp(input);
             if (re.test(name)) filtered.push(this);
         });
-        showSelectedProducts($(filtered));
+        
+        currentProducts = $(filtered);
+        let paginated = paginateProducts(filtered, 1);
+
+        console.log(filtered);
+        console.log(paginated);
+        
+        showSelectedProducts($(paginated));
+        updateNumResults(filtered.length);
     }
 }
