@@ -1,8 +1,9 @@
 const https = require('https');
 
 /* 
-*   Return an object with a get method for an HTTP request using native 
-*   https requests. Can be expanded for additional HTTP requests.
+*   Return an object with a get method for a request using native 
+*   https requests. Can be expanded for additional types of requests.
+*   (POST, PUT, DELETE, etc)
 */
 
 module.exports = (function () {

@@ -2,40 +2,6 @@
 
 $('document').ready(main());
 
-/**
- * 
- *  API returns an object with methods to call the different APIs.
- * 
- */
-    
-function API () {
-    const host = 'http://localhost:8080';
-
-    const getMany = async () => {
-        let url = `${host}/getMany`;
-        return await tryFetch(url);
-    }
-
-    const getSingle = async (id) => {
-        let url = `${host}/getSingle/${id}`;
-        return await tryFetch(url);
-    }
-
-    const tryFetch = async (url) => {
-        try {
-            let res = await fetch(url);
-            return await res.json();
-        } catch (err) {
-            alert(err);
-        }
-    }
-
-    return {
-        getMany: getMany,
-        getSingle: getSingle
-    }
-}
-
 async function main () {
 
     /**
@@ -107,7 +73,7 @@ async function main () {
             .addClass('block2-txt p-t-20');
         const nameDetail = $('<a></a>')
             .addClass('block2-name dis-block s-text3 p-b-5')
-            .attr('href', 'product-detail.html')
+            .attr('href', `product-detail.html?id=${data._id}`)
             .text(data.name);
         const priceSpan = $('<span></span>')
             .addClass('block2-price m-text6 p-r-5')
@@ -233,8 +199,6 @@ async function main () {
     let currentProducts = [...initialProducts];
     let defaultSort = [...initialProducts];
 
-    
-
     // sorting and filter selection handlers
     $('select').change(function() {
         let products = currentProducts;
@@ -349,8 +313,6 @@ async function main () {
             else product.filtered = false;
         });
 
-        console.log(products);
-
         showSelectedProducts(paginateProducts(products), 1);
     }
 
@@ -387,7 +349,7 @@ async function main () {
         showSelectedProducts(paginateProducts(filtered), 1);
     }
 
-    // Pagination event handlers
+    // Pagination event handler
     $('.pagination').on('click', 'a', function() {
         let page = $(this).text().trim();
         showSelectedProducts(currentProducts, parseInt(page));
