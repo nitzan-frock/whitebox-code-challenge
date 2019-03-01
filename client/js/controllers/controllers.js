@@ -123,62 +123,94 @@ async function main () {
     // add id to the div where the products are located on the DOM
     $('.block2').closest('.row').attr('id', 'products-container');
     // remove any templates
-    $('#products-container').empty();
+    const productsContainer = $('#products-container');
+    productsContainer.empty();
 
     const api = API();
 
     let initialProductsData = await api.getMany();
 
     let initialProducts = initialProductsData.map(product => {
-        return {el: buildProductDiv(product), visible: true, filtered: true};
+        return {el: buildProductDiv(product), visible: false, filtered: true};
     });
 
     // Show the selected products in the DOM and hide the others.
-    const showSelectedProducts = (products) => {
+    const showSelectedProducts = (products, page) => {
+        setActivePage(page);
         products.forEach(product => {
-            if (product.filtered && product.visible) {
+            if (product.page === page) {
                 $(product.el).show();
             } else {
                 $(product.el).hide();
             }
+            productsContainer.append(product.el);
         });
     }
 
     // Insert default products into the DOM.
     const showInitial = () => {
-        let paginated = paginateProducts(initialProducts,1);
-        paginated.forEach(product => {
-            $('#products-container').append(product.el);
-        });
-        showSelectedProducts(paginated);
-        //$('#products-container').html(paginateProducts(initialProducts, 1));
+        const paginated = paginateProducts(initialProducts);
+        showSelectedProducts(paginated, 1);
     }
 
-    const paginateProducts = (products, page) => {
-        let numProductsPerPage = 12;
-        let shownProducts = [...products];
+    const paginateProducts = (products) => {
+        const numProductsPerPage = 12;
+        let numFiltered = 0;
 
-        if (shownProducts.length > numProductsPerPage) {
-            let startingIndex = (page - 1) * (shownProducts.length);
-            let endingIndex = (page * numProductsPerPage);
-            console.log(startingIndex, endingIndex);
-
-            for (let i = startingIndex; i < shownProducts.length; i++){
-                if (i >= startingIndex && i < endingIndex) {
-                    shownProducts[i].visible = true;
-                } else {
-                    shownProducts[i].visible = false;
-                }
+        let paginated = [...products].map(product => {
+            if (product.filtered) {
+                product.page = parseInt((numFiltered / numProductsPerPage) + 1);
+                numFiltered++;
+            } else {
+                product.page = -1;
             }
-        }
 
-        updateNumResults(shownProducts.length);
-        return shownProducts;
+            return product;
+        });
+
+        createPages(numFiltered, numProductsPerPage);
+        updateNumResults(paginated);
+        return paginated;
+    }
+
+    // Create pagination elements based on the number of products
+    const createPages = (numResults, numProductsPerPage) => {
+        let paginationContainer = $('.pagination');
+
+        // Empty current page buttons
+        paginationContainer.empty();
+
+        let numPages = Math.ceil(numResults / numProductsPerPage);
+        for (let pageIndex = 0; pageIndex < numPages; pageIndex++) {
+            let page = pageIndex + 1;
+            let pageAnchor = $('<a></a>').addClass('item-pagination flex-c-m trans-0-4')
+                .attr('href', '#')
+                .attr('id', `page-${page}`)
+                .text(page);
+            paginationContainer.append(pageAnchor)
+        }
+    }
+
+    const setActivePage = (page) => {
+        let id = `page-${page}`;
+        let active = 'active-pagination';
+
+        $('.item-pagination').each(function () {
+            if ($(this).attr('id') === id) {
+                $(this).addClass(active);
+            } else if ($(this).hasClass(active)) {
+                $(this).removeClass(active);
+            }
+        });
     }
 
     // Update how many results are showing of the total for the search or filter.
-    const updateNumResults = (numResults) => {
+    const updateNumResults = (products) => {
+        let reducer = (accumulator, current) => current ? accumulator+1 : accumulator;
+        let numResults = products.map(product => product.filtered).reduce(reducer, 0);
+
         let results = $('.s-text8.p-t-5.p-b-5');
+
         if (numResults < 12) {
             let text = `Showing 1–${numResults} of ${numResults} results`;
             results.text(text);
@@ -191,11 +223,8 @@ async function main () {
     showInitial();
 
     // State of products
-    let search = false;
-    let sorted = [...initialProducts];
-    let defaultSort = [...initialProducts];
-    ///let filtered = [...initialProducts];
     let currentProducts = [...initialProducts];
+    let defaultSort = [...initialProducts];
 
     
 
@@ -239,22 +268,23 @@ async function main () {
     });
 
     const sortByDefault = () => {
-        $('#products-container').html(paginateProducts(defaultSort, 1));
+        currentProducts = [...defaultSort];
+        showSelectedProducts(paginateProducts(currentProducts), 1);
     }
 
     // Sort by price Low - High, or High - Low.
     const sortByPrice = (method) => {
-        sorted.sort(function(a, b) {
+        currentProducts.sort(function(a, b) {
             // parse the price from the element
-            let aUSD = $(a).find('.block2-price').text().trim();
-            let bUSD = $(b).find('.block2-price').text().trim();
+            let aUSD = $(a.el).find('.block2-price').text().trim();
+            let bUSD = $(b.el).find('.block2-price').text().trim();
             
             // check to make sure there is not a sale price
             if (aUSD === '') {
-                aUSD = $(a).find('.block2-newprice').text().trim();
+                aUSD = $(a.el).find('.block2-newprice').text().trim();
             }
             if (bUSD === '') {
-                bUSD = $(b).find('.block2-newprice').text().trim();
+                bUSD = $(b.el).find('.block2-newprice').text().trim();
             }
 
             // regex matches the number value and drops the "$"
@@ -269,10 +299,8 @@ async function main () {
             }
         });
 
-        console.log(sorted.length);
-
         // place the sorted list into it's proper location on the DOM.
-        $('#products-container').html(paginateProducts(sorted, 1));
+        showSelectedProducts(paginateProducts(currentProducts), 1);
     }
 
     const compare = (a, b) => {
@@ -300,24 +328,23 @@ async function main () {
 
     // filter by price
     const filterProducts = (min, max, products) => {
-        let filtered = [];
-
-        $(products).each(function () {
-            let USD = $(this).find('.block2-price').text().trim();
+        products.forEach(product => {
+            let USD = $(product.el).find('.block2-price').text().trim();
             
+            // if there is a sale price, use the sale price (some templated products are on sale)
             if (USD === '') {
-                USD = $(this).find('.block2-newprice').text().trim();
+                USD = $(product.el).find('.block2-newprice').text().trim();
             }
 
             let value = price(USD);
             
-            if (value >= min && value <= max) {
-                filtered.push(this);
-            }
+            if (value >= min && value <= max) product.filtered = true;
+            else product.filtered = false;
         });
 
-        showSelectedProducts(filtered);
-        $('#products-container').html(paginateProducts(filtered,1));
+        console.log(products);
+
+        showSelectedProducts(paginateProducts(products), 1);
     }
 
     // Search handlers
@@ -339,20 +366,23 @@ async function main () {
             return;
         }
 
-        let filtered = [];
-        $(initialProducts).each(function () {
-            let name = $(this).find('.block2-name').text().trim();
+        let filtered = [...initialProducts].map((product) => {
+            let name = $(product.el).find('.block2-name').text().trim();
             let re = new RegExp(input);
-            if (re.test(name)) filtered.push(this);
+            if (re.test(name)) product.filtered = true;
+            else product.filtered = false;
+
+            return product;
         });
         
-        currentProducts = $(filtered);
-        let paginated = paginateProducts(filtered, 1);
-
-        console.log(filtered);
-        console.log(paginated);
+        currentProducts = [...filtered];
         
-        showSelectedProducts($(paginated));
-        updateNumResults(filtered.length);
+        showSelectedProducts(paginateProducts(filtered), 1);
     }
+
+    // Pagination event handlers
+    $('.pagination').on('click', 'a', function() {
+        let page = $(this).text().trim();
+        showSelectedProducts(currentProducts, parseInt(page));
+    });
 }
