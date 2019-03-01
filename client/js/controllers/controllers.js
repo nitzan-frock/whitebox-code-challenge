@@ -134,9 +134,12 @@ async function main () {
         return {el: buildProductDiv(product), visible: false, filtered: true};
     });
 
+    const numProductsPerPage = 12;
+
     // Show the selected products in the DOM and hide the others.
     const showSelectedProducts = (products, page) => {
         setActivePage(page);
+        updateNumResults(products, page);
         products.forEach(product => {
             if (product.page === page) {
                 $(product.el).show();
@@ -154,7 +157,7 @@ async function main () {
     }
 
     const paginateProducts = (products) => {
-        const numProductsPerPage = 12;
+        
         let numFiltered = 0;
 
         let paginated = [...products].map(product => {
@@ -168,13 +171,12 @@ async function main () {
             return product;
         });
 
-        createPages(numFiltered, numProductsPerPage);
-        updateNumResults(paginated);
+        createPages(numFiltered);
         return paginated;
     }
 
     // Create pagination elements based on the number of products
-    const createPages = (numResults, numProductsPerPage) => {
+    const createPages = (numResults) => {
         let paginationContainer = $('.pagination');
 
         // Empty current page buttons
@@ -205,17 +207,22 @@ async function main () {
     }
 
     // Update how many results are showing of the total for the search or filter.
-    const updateNumResults = (products) => {
+    const updateNumResults = (products, page) => {
         let reducer = (accumulator, current) => current ? accumulator+1 : accumulator;
         let numResults = products.map(product => product.filtered).reduce(reducer, 0);
 
         let results = $('.s-text8.p-t-5.p-b-5');
 
-        if (numResults < 12) {
-            let text = `Showing 1–${numResults} of ${numResults} results`;
+        let first = (page * numProductsPerPage) - numProductsPerPage + 1;
+        let last = numResults <= page * numProductsPerPage 
+            ? numResults 
+            : page * numProductsPerPage;
+
+        if (numResults === 0) {
+            let text = `Showing 0 results`;
             results.text(text);
         } else {
-            let text = `Showing 1–12 of ${numResults} results`;
+            let text = `Showing ${first}–${last} of ${numResults} results`;
             results.text(text);
         }
     }
@@ -321,7 +328,7 @@ async function main () {
             $(this).click(function () {
                 let lo = $('#value-lower').text().trim();
                 let hi = $('#value-upper').text().trim();
-                filterProducts(lo, hi);
+                filterProducts(lo, hi, currentProducts);
             });
         }
     });
