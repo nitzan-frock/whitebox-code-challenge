@@ -15,3 +15,12 @@ product page. Both HTML templates are provided.
 We're only going to read through Javascript on both the client and the
 server, so focus your energy there. You should not need to create any new
 UI elements.
+
+# Instructions
+
+To run this project:
+
+1. Clone the repository.
+2. npm install.
+3. npm start.
+4. Go to http://localhost:8080
