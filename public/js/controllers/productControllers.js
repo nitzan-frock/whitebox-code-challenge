@@ -1,6 +1,6 @@
 'use strict';
 
-$('document').ready(main());
+main();
 
 async function main () {
 

@@ -18,7 +18,7 @@ module.exports = function (app, url) {
                 return item._id === id ? true : false;
             });
 
-            res.send(singleItem);
+            res.send(singleItem[0]);
         }
         
         https.get(url, send);
