@@ -39,7 +39,6 @@ async function main () {
         $(this).find('p').text(productData.about);
     });
 
-    console.log(productData);
     $('.wrap-slick3').find('img').each(function () {
         $(this).attr('src', productData.image);
     });

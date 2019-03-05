@@ -324,7 +324,6 @@ async function main () {
     });
 
     $('button').find('.fa-search').click(function () {
-        console.log('FILTER CLICKED');
         let input = $('[name="search-product"]').val();
         searchProducts(input);
     });

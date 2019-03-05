@@ -15,6 +15,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// serve the public directory for the example site
 app.use(express.static(path.join(__dirname, '../public/')));
 
 app.get('/', (req, res) => {
