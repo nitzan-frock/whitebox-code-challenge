@@ -43,32 +43,31 @@ async function main () {
         $(this).attr('src', productData.image);
     });
 
-    const getProductCategories = (product) => {
-        let categories = {};
+    // create an object with fields containing the unique tags for a product.
+    const getProductTags = (product) => {
+        let tags = {};
         product.tags.forEach(tag => {
-            if (!categories[tag]) categories[tag] = 1;
+            if (!tags[tag]) tags[tag] = 1;
         });
-        return categories;
+        return tags;
     }
 
-    const detailProductCategories = getProductCategories(productData);
+    const currentTags = getProductTags(productData);
     
     const productsData = await api.getMany();
 
+    /** 
+     * Filter out the current product from the data list, and 
+     * return a list of all related products.
+    */
     const related = productsData.filter(product => {
+        // exclude the current product.
         if (product._id === id) return false;
-
-        const categories = getProductCategories(product);
-
-        return Object.keys(categories).some(category => {
-            if (detailProductCategories[category]) {
-                return true;
-            } else {
-                return false;
-            }
-        });
+        // Array.some() is used as the conditional check to find products with 
+        // equivalent tags.
+        return product.tags.some(tag => currentTags[tag] ? true : false);
     });
-    
+   
     /**
      * Build new product element for the DOM using the HTML template's 
      * classes.
