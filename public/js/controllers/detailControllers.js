@@ -65,7 +65,7 @@ async function main () {
         if (product._id === id) return false;
         // Array.some() is used as the conditional check to find products with 
         // equivalent tags.
-        return product.tags.some(tag => currentTags[tag] ? true : false);
+        return product.tags.some(tag => currentTags[tag]);
     });
    
     /**
