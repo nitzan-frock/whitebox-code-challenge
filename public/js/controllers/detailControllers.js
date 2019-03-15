@@ -22,8 +22,8 @@ async function main () {
     const id = url.match(/\?id=\w+/ig)[0]
         .match(/[^?id=]\w+/ig)[0];
 
-    let api = API();
-    let productData = await api.getSingle(id);
+    const api = API();
+    const productData = await api.getSingle(id);
 
     
     // Set Product Name
@@ -51,14 +51,14 @@ async function main () {
         return categories;
     }
 
-    let detailProductCategories = getProductCategories(productData);
+    const detailProductCategories = getProductCategories(productData);
     
-    let productsData = await api.getMany();
+    const productsData = await api.getMany();
 
-    let related = productsData.filter(product => {
+    const related = productsData.filter(product => {
         if (product._id === id) return false;
 
-        let categories = getProductCategories(product);
+        const categories = getProductCategories(product);
 
         return Object.keys(categories).some(category => {
             if (detailProductCategories[category]) {
@@ -150,7 +150,7 @@ async function main () {
 
 
     // insert related products
-    let relatedDivs = related.map(product => {
+    const relatedDivs = related.map(product => {
         return buildProductDiv(product);
     });
 
